@@ -6,10 +6,18 @@ import os
 from datetime import datetime
 from google.cloud import storage
 import base64
+import zipfile
 
 def lambda_handler(event, context):
     print(event)
     sns_msg = json.loads(event["Records"][0]["Sns"]["Message"])
+    submission_file = sns_msg["submission_url"]
+    is_zip = True
+    if submission_file.endswith(".zip"):
+        is_zip = True
+    else:
+        is_zip = False
+
     # Download the file
     response = requests.get(sns_msg["submission_url"])
     bucket_name = os.environ.get('bucket_name')
@@ -20,12 +28,11 @@ def lambda_handler(event, context):
 
     gcs_path = ""
     # Check if the request was successful
-    if response.status_code == 200:
+    if response.status_code == 200 and is_zip:
         # Write the downloaded content to the file
         with open(file_path, 'wb') as file:
             file.write(response.content)
-
-        # Retrieve service account key from environment variable
+            # Retrieve service account key from environment variable
         decoded_gcp_key = base64.b64decode(os.environ.get('gcp_key')).decode('utf-8')
 
         # Create a GCP storage client using the credentials
@@ -50,11 +57,11 @@ def lambda_handler(event, context):
     table = dynamodb.Table(os.environ.get('ddb_table_name'))
 
     email_subject = "Assignnment Submitted Sucessfully"
-    email_body = 'Assignment Submitted Sucessfully\nFile Path in GCS: ' + bucket_name + "/submission_file.zip"
+    email_body = 'Hello,\n\nAssignment Submitted Sucessfully\nFile Path in GCS: ' + bucket_name + "/submission_file.zip"
 
     if submission_status == "FAILED":
         email_subject = "Assignnment Submission Failed"
-        email_body = 'Assignment Submission Failed. Unable to Download URL'
+        email_body = 'Hello,\n\nAssignment Submission Failed. URL is invalid'
 
     # Parameters for the email
     email_params = {
