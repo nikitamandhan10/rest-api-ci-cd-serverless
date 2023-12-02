@@ -40,7 +40,7 @@ def lambda_handler(event, context):
 
         bucket = client.get_bucket(bucket_name)
 
-        gcs_path = bucket_name + sns_msg['username'] + '/' + sns_msg['assignment_id'] + '/' + str(
+        gcs_path = bucket_name + '/' + sns_msg['username'] + '/' + sns_msg['assignment_id'] + '/' + str(
             sns_msg['attempt_count']) + '/' + 'submission_file.zip'
         # Upload the zip file to GCS
         blob_name = gcs_path
@@ -57,7 +57,7 @@ def lambda_handler(event, context):
     table = dynamodb.Table(os.environ.get('ddb_table_name'))
 
     email_subject = "Assignnment Submitted Sucessfully"
-    email_body = 'Hello,\n\nAssignment Submitted Sucessfully\nFile Path in GCS: ' + bucket_name + "/submission_file.zip"
+    email_body = 'Hello,\n\nAssignment Submitted Sucessfully\nFile Path in GCS: ' + gcs_path
 
     if submission_status == "FAILED":
         email_subject = "Assignnment Submission Failed"
